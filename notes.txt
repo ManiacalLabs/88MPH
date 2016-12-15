@@ -1,0 +1,23 @@
+https://www.electronicsblog.net/4-digits-7-segments-led-display-multiplexing-with-arduino/
+https://en.wikipedia.org/wiki/2N2222
+
+### Buttons
+# functions
+- power. MUST be toggle or latched button
+- set speed offset
+- brightness (toggle preferred)
+    - or just store in EEPROM and toggle that
+- MPH/KPH (make on PCB jumper)
+    - Nevermind. KPH is stupid, 2 digits maxes at 61MPH
+    - At least for now...
+
+# brightness process
+hold B - brightness toggles between high and low
+
+# speed offset process
+hold A
+DPs flash and speed shows 88 offset
+tap A button to increment
+tap B button to decrement
+hold A again to set
+new speed offset flashes, then back to regular mode
