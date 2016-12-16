@@ -1,9 +1,33 @@
+#include <EEPROM.h>
 #include "TimerOne.h"
 #include "display.h"
 #include "buttons.h"
 
 uint8_t _cur_value;
 byte _digit_values[DIGIT_COUNT];
+
+#define CONFIG_CHECK 42
+#define CONFIG_BYTE 0
+bool _pwm_level = true;
+#define PWM_BYTE 1
+uint8_t _target_speed = 88;
+#define TARGET_BYTE 2
+#define SPEED_MAX 199
+
+void write_config(){
+    EEPROM.write(CONFIG_BYTE, CONFIG_CHECK);
+    EEPROM.write(PWM_BYTE, _pwm_level);
+    EEPROM.write(TARGET_BYTE, _target_speed);
+}
+
+void read_config(){
+    if(EEPROM.read(CONFIG_BYTE) != CONFIG_CHECK){
+        write_config();
+    }
+
+    _pwm_level = EEPROM.read(PWM_BYTE);
+    _target_speed = EEPROM.read(TARGET_BYTE);
+}
 
 inline void disp_num(byte digit){
     static byte i;
@@ -15,8 +39,9 @@ inline void disp_num(byte digit){
     }
 }
 
-#define PWM_STEPS 10
-byte _pwm_level = 10;
+#define PWM_STEPS 20
+#define PWM_HIGH 20
+#define PWM_LOW 5
 byte _pwm_step = 0;
 byte _digit = 0;
 void plex(){
@@ -26,31 +51,35 @@ void plex(){
         digitalWrite(cathodes[i], LOW);
     }
 
-    if(_pwm_step < _pwm_level){
+    if(_pwm_step < (_pwm_level ? PWM_HIGH : PWM_LOW)){
         disp_num(_digit);
         digitalWrite(cathodes[_digit], HIGH);
     }
 
-    _pwm_step++;
-    if(_pwm_step >= PWM_STEPS) _pwm_step = 0;
-
     _digit += 1;
-    if(_digit >= DIGIT_COUNT) _digit = 0;
-
-}
-
-void set_value(uint8_t value){
-    byte _v, i = 0;
-    for(;i<DIGIT_COUNT; i++){
-        _v = value % 10;
-        _digit_values[i] = digits[_v];
-        value = (value - _v) / 10;
+    if(_digit >= DIGIT_COUNT){
+        _digit = 0;
+        _pwm_step++;
+        if(_pwm_step >= PWM_STEPS) _pwm_step = 0;
     }
+
 }
 
 void set_dp(byte digit, bool state){
     if(state) _digit_values[digit] |= _BV(7);
     else _digit_values[digit] &= ~_BV(7);
+}
+
+void set_value(uint8_t value){
+    byte _v, i = 0;
+    static bool dp;
+    for(;i<DIGIT_COUNT; i++){
+        dp = _digit_values[i] & _BV(7);
+        _v = value % 10;
+        _digit_values[i] = digits[_v];
+        if(dp) _digit_values[i] |= _BV(7);
+        value = (value - _v) / 10;
+    }
 }
 
 inline void check_btn_hold(_button *btn){
@@ -70,8 +99,9 @@ inline void check_btn_hold(_button *btn){
     }
     else{
         if(btn->flag && btn->reset){
-            btn->flag = btn->reset = btn->last_state = false;
+            btn->flag = btn->reset = false;
         }
+        btn->last_state = false;
     }
 }
 
@@ -81,11 +111,13 @@ inline void check_buttons(){
 }
 
 void btn_a(){
-
+    _target_speed++;
+    if(_target_speed > 99) _target_speed = 1;
 }
 
 void btn_b(){
-
+    _target_speed--;
+    if(_target_speed < 0 || _target_speed > 99)
 }
 
 void set_btn_inc_isr(bool state){
@@ -97,17 +129,21 @@ void set_btn_inc_isr(bool state){
         detachInterrupt(digitalPinToInterrupt(BTN_A.pin));
         detachInterrupt(digitalPinToInterrupt(BTN_B.pin));
     }
-
 }
 
 void setup(){
-    //make sure 0 before init anything else
-    set_value(0);
-
     Serial.begin(115200);
 
+    //make sure 0 before init anything else
+    set_value(0);
+    set_dp(0, false);
+    set_dp(1, false);
+
+    //load config
+    read_config();
+
     //Setup display multiplex timer
-    Timer1.initialize(1000);
+    Timer1.initialize(500);
     Timer1.attachInterrupt(plex);
 
     //Setup btn pins
@@ -124,23 +160,43 @@ void setup(){
         pinMode(anodes[i], OUTPUT);
         digitalWrite(anodes[i], LOW);
     }
-
-    set_value(0);
-    set_dp(0, true);
-    set_dp(1, true);
 }
 
 uint8_t test_val = 0;
+bool _in_target_set = false;
 
 void loop(){
     check_buttons();
     if(HOLD_BTN_A){
-        set_value(++test_val);
+        if(_in_target_set){
+            _in_target_set = false;
+            set_btn_inc_isr(false);
+            set_dp(0, false);
+            set_dp(1, false);
+        }
+        else{
+            _in_target_set = true;
+            set_btn_inc_isr(true);
+            set_dp(0, true);
+            set_dp(1, true);
+        }
         BTN_A.reset = true;
     }
-    if(HOLD_BTN_B){
-        set_value(--test_val);
-        BTN_B.reset = true;
+    if(!_in_target_set){
+        if(HOLD_BTN_B){
+            _pwm_level = !_pwm_level;
+            EEPROM.write(0, _pwm_level);
+            BTN_B.reset = true;
+        }
+    }
+
+    if(_in_target_set){
+        set_value(_target_speed);
+    }
+    else{
+        set_value(test_val++);
+        if(test_val > 99) test_val = 0;
+        delay(200);
     }
     // set_value(test_val);
     // set_dp(0, test_val % 2 == 0);

@@ -25,6 +25,6 @@ _button btns[2] = {
 
 #define BTN_A btns[0]
 #define BTN_B btns[1]
-#define BTN_HOLD_TIME 1000
+#define BTN_HOLD_TIME 600
 #define HOLD_BTN_A BTN_A.flag && !BTN_A.reset
 #define HOLD_BTN_B BTN_B.flag && !BTN_B.reset
