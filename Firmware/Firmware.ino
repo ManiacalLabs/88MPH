@@ -1,8 +1,6 @@
 #include "TimerOne.h"
 #include "display.h"
-
-#define BTN_A 2
-#define BTN_B 3
+#include "buttons.h"
 
 uint8_t _cur_value;
 byte _digit_values[DIGIT_COUNT];
@@ -55,6 +53,33 @@ void set_dp(byte digit, bool state){
     else _digit_values[digit] &= ~_BV(7);
 }
 
+inline void check_btn_hold(_button *btn){
+    if(digitalRead(btn->pin) == LOW){
+        if(!btn->flag){
+            if(!btn->last_state){
+                btn->last_state = true;
+                btn->time_press = millis();
+            }
+            else{
+                if(millis() - btn->time_press >= BTN_HOLD_TIME)
+                {
+                    btn->flag = true;
+                }
+            }
+        }
+    }
+    else{
+        if(btn->flag && btn->reset){
+            btn->flag = btn->reset = btn->last_state = false;
+        }
+    }
+}
+
+inline void check_buttons(){
+    check_btn_hold(&BTN_A);
+    check_btn_hold(&BTN_B);
+}
+
 void btn_a(){
 
 }
@@ -65,57 +90,29 @@ void btn_b(){
 
 void set_btn_inc_isr(bool state){
     if(state){
-        attachInterrupt(digitalPinToInterrupt(BTN_A), btn_a, FALLING);
-        attachInterrupt(digitalPinToInterrupt(BTN_B), btn_b, FALLING);
+        attachInterrupt(digitalPinToInterrupt(BTN_A.pin), btn_a, FALLING);
+        attachInterrupt(digitalPinToInterrupt(BTN_B.pin), btn_b, FALLING);
     }
     else{
-        detachInterrupt(digitalPinToInterrupt(BTN_A));
-        detachInterrupt(digitalPinToInterrupt(BTN_B));
+        detachInterrupt(digitalPinToInterrupt(BTN_A.pin));
+        detachInterrupt(digitalPinToInterrupt(BTN_B.pin));
     }
 
-}
-
-#define BTN_HOLD_TIME 1000
-bool last_btn_a, last_btn_b; //last btn state
-long t_btn_a, t_btn_b; //last btn press time
-bool f_btn_a, f_btn_b; //btn hold flag
-bool r_btn_a, r_btn_b; //btn reset flag
-inline void check_btn_hold(){
-    if(digitalRead(BTN_A) == LOW){
-        if(!f_btn_a){
-            if(!last_btn_a){
-                last_btn_a = true;
-                t_btn_a = millis();
-            }
-            else{
-                if(millis() - t_btn_a >= BTN_HOLD_TIME)
-                {
-                    f_btn_a = true;
-                }
-            }
-        }
-    }
-    else{
-        if(f_btn_a && r_btn_a){
-            f_btn_a = r_btn_a = last_btn_a = false;
-        }
-    }
 }
 
 void setup(){
-    Serial.begin(115200);
+    //make sure 0 before init anything else
     set_value(0);
+
+    Serial.begin(115200);
+
     //Setup display multiplex timer
     Timer1.initialize(1000);
     Timer1.attachInterrupt(plex);
 
     //Setup btn pins
-    pinMode(BTN_A, INPUT_PULLUP);
-    pinMode(BTN_B, INPUT_PULLUP);
-    last_btn_a = last_btn_b = false;
-    t_btn_a = t_btn_b = 0;
-    f_btn_a = f_btn_b = false;
-    r_btn_a = r_btn_b = false;
+    pinMode(BTN_A.pin, INPUT_PULLUP);
+    pinMode(BTN_B.pin, INPUT_PULLUP);
 
     //Initialize 7-seg displays
     byte i = 0;
@@ -134,13 +131,16 @@ void setup(){
 }
 
 uint8_t test_val = 0;
-#define HOLD_BTN_A f_btn_a && !r_btn_a
-#define HOLD_BTN_B f_btn_b && !r_btn_b
+
 void loop(){
-    check_btn_hold();
+    check_buttons();
     if(HOLD_BTN_A){
         set_value(++test_val);
-        r_btn_a = true;
+        BTN_A.reset = true;
+    }
+    if(HOLD_BTN_B){
+        set_value(--test_val);
+        BTN_B.reset = true;
     }
     // set_value(test_val);
     // set_dp(0, test_val % 2 == 0);
