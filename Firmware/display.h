@@ -9,7 +9,7 @@ byte anodes[SEG_COUNT] = {
     11, //G
     12 //DP
 };
-//0b0GFEDCBA
+//0b[DP]GFEDCBA
 //####
 // A
 //F B
