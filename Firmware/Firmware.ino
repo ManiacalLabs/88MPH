@@ -11,7 +11,7 @@ byte _digit_values[DIGIT_COUNT];
 #define CONFIG_BYTE 0
 bool _pwm_level = true;
 #define PWM_BYTE 1
-byte _target_speed = 88;
+uint8_t _target_speed = 88;
 #define TARGET_BYTE 2
 #define SPEED_MAX 199
 
@@ -76,6 +76,7 @@ void set_value(uint8_t value){
     _v = i = 0;
     static bool dp, lt10;
     lt10 = value < 10; // less than 10 values need no preceeding 0's
+    // if(value > 99) value = 99; //can't show over 99 anyways
     for(;i < DIGIT_COUNT; i++){
         dp = _digit_values[i] & _BV(7);
         _v = value % 10;
@@ -127,11 +128,20 @@ void clear_btns(){
 }
 
 uint8_t get_speed(){
-    return (millis() / 100) & 0xFF;
+    static uint8_t speed;
+
+    if(_target_speed == 0) return 88;
+    else{
+        speed = (millis() / 100) % 99;
+        //map target speed to 88mph for proper scaling
+        speed = map(speed, 0, _target_speed, 0, 88);
+    }
+
+    return speed;
 }
 
 bool wait_obd(){
-    return millis() > 4000;
+    return true; //millis() > 4000;
 }
 
 #define WAIT_STEPS 8
@@ -195,9 +205,7 @@ void loop(){
             start_target_set();
         }
 
-        //clear ALL holds incase B was held during target_set
         BTN_A.reset = true;
-        BTN_B.reset = true;
     }
     if(!_in_target_set){
         if(HOLD_BTN_B){
@@ -208,14 +216,18 @@ void loop(){
     }
 
     if(_in_target_set){
-        if(PRESS_BTN_A){
+        if(HOLD_BTN_B){
+            _target_speed = 88;
+            BTN_B.reset = true;
+        }
+        else if(PRESS_BTN_A){
             _target_speed++;
-            if(_target_speed > 99) _target_speed = 1;
+            if(_target_speed > 99) _target_speed = 0;
             BTN_A.reset = true;
         }
         else if(PRESS_BTN_B){
             _target_speed--;
-            if(_target_speed < 1) _target_speed = 99;
+            if(_target_speed > 99) _target_speed = 99;
             BTN_B.reset = true;
         }
         set_value(_target_speed);
