@@ -10,7 +10,7 @@ byte _digit_values[DIGIT_COUNT];
 #define CONFIG_BYTE 0
 bool _pwm_level = true;
 #define PWM_BYTE 1
-uint8_t _target_speed = 88;
+byte _target_speed = 88;
 #define TARGET_BYTE 2
 #define SPEED_MAX 199
 
@@ -110,20 +110,44 @@ inline void check_buttons(){
     check_btn_hold(&BTN_B);
 }
 
+#define BTN_PRESS_TIME 5
+
+long _t_btn_a;
 void btn_a(){
-    _target_speed++;
-    if(_target_speed > 99) _target_speed = 1;
+    // _target_speed++;
+    // if(_target_speed > 99) _target_speed = 1;
+    static bool state;
+    state = digitalRead(BTN_A.pin);
+    if(state){
+        if((millis() - _t_btn_a) >= BTN_PRESS_TIME){
+            _target_speed++;
+            if(_target_speed > 99) _target_speed = 1;
+        }
+    }
+    else{
+        _t_btn_a = millis();
+    }
 }
 
+long _t_btn_b;
 void btn_b(){
-    _target_speed--;
-    if(_target_speed < 0 || _target_speed > 99)
+    static bool state;
+    state = digitalRead(BTN_B.pin);
+    if(state){
+        if((millis() - _t_btn_b) >= BTN_PRESS_TIME){
+            _target_speed--;
+            if(_target_speed < 1) _target_speed = 99;
+        }
+    }
+    else{
+        _t_btn_b = millis();
+    }
 }
 
 void set_btn_inc_isr(bool state){
     if(state){
-        attachInterrupt(digitalPinToInterrupt(BTN_A.pin), btn_a, FALLING);
-        attachInterrupt(digitalPinToInterrupt(BTN_B.pin), btn_b, FALLING);
+        attachInterrupt(digitalPinToInterrupt(BTN_A.pin), btn_a, CHANGE);
+        attachInterrupt(digitalPinToInterrupt(BTN_B.pin), btn_b, CHANGE);
     }
     else{
         detachInterrupt(digitalPinToInterrupt(BTN_A.pin));
@@ -185,13 +209,15 @@ void loop(){
     if(!_in_target_set){
         if(HOLD_BTN_B){
             _pwm_level = !_pwm_level;
-            EEPROM.write(0, _pwm_level);
+            write_config();
             BTN_B.reset = true;
         }
     }
 
     if(_in_target_set){
+        // Serial.println(_target_speed);
         set_value(_target_speed);
+        // delay(250);
     }
     else{
         set_value(test_val++);
