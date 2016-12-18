@@ -3,6 +3,11 @@
 #include "display.h"
 #include "buttons.h"
 #include "MsTimer2.h"
+#include "OBD2UART.h"
+
+COBD obd;
+
+#define TIME_SPEED 88 //when this baby hits...
 
 uint8_t _cur_value;
 byte _digit_values[DIGIT_COUNT];
@@ -11,9 +16,9 @@ byte _digit_values[DIGIT_COUNT];
 #define CONFIG_BYTE 0
 bool _pwm_level = true;
 #define PWM_BYTE 1
-uint8_t _target_speed = 88;
+uint8_t _target_speed = TIME_SPEED;
 #define TARGET_BYTE 2
-#define SPEED_MAX 199
+#define SPEED_MAX 99
 
 void write_config(){
     EEPROM.write(CONFIG_BYTE, CONFIG_CHECK);
@@ -76,7 +81,7 @@ void set_value(uint8_t value){
     _v = i = 0;
     static bool dp, lt10;
     lt10 = value < 10; // less than 10 values need no preceeding 0's
-    // if(value > 99) value = 99; //can't show over 99 anyways
+    if(value > SPEED_MAX) value = SPEED_MAX; //can't show over 99 anyways
     for(;i < DIGIT_COUNT; i++){
         dp = _digit_values[i] & _BV(7);
         _v = value % 10;
@@ -128,20 +133,27 @@ void clear_btns(){
 }
 
 uint8_t get_speed(){
-    static uint8_t speed;
+    static int speed;
 
-    if(_target_speed == 0) return 88;
+    if(_target_speed == 0) return TIME_SPEED;
     else{
         speed = (millis() / 100) % 99;
-        //map target speed to 88mph for proper scaling
-        speed = map(speed, 0, _target_speed, 0, 88);
+        // obd.readPID(PID_THROTTLE, speed);
+        //OBD returns KPH, convert to MPH
+        // speed = (uint8_t)((speed * 10000L + 5)/ 16090);
     }
 
-    return speed;
+    if(_target_speed != TIME_SPEED){
+        //map target speed to 88mph for proper scaling
+        speed = map(speed, 0, _target_speed, 0, TIME_SPEED);
+    }
+
+    return (uint8_t)speed;
 }
 
 bool wait_obd(){
-    return true; //millis() > 4000;
+    return millis() > 2000;
+    // return obd.init();
 }
 
 #define WAIT_STEPS 8
@@ -217,17 +229,17 @@ void loop(){
 
     if(_in_target_set){
         if(HOLD_BTN_B){
-            _target_speed = 88;
+            _target_speed = TIME_SPEED;
             BTN_B.reset = true;
         }
         else if(PRESS_BTN_A){
             _target_speed++;
-            if(_target_speed > 99) _target_speed = 0;
+            if(_target_speed > SPEED_MAX) _target_speed = 0;
             BTN_A.reset = true;
         }
         else if(PRESS_BTN_B){
             _target_speed--;
-            if(_target_speed > 99) _target_speed = 99;
+            if(_target_speed > SPEED_MAX) _target_speed = SPEED_MAX;
             BTN_B.reset = true;
         }
         set_value(_target_speed);
@@ -241,10 +253,8 @@ void loop(){
 }
 
 void setup(){
-    Serial.begin(115200);
-
     //make sure 0 before init anything else
-    set_value(0);
+    set_value(22);
     set_dp(0, false);
     set_dp(1, false);
 
@@ -274,8 +284,11 @@ void setup(){
     MsTimer2::set(BTN_SCAN_PERIOD, check_btns);
     MsTimer2::start();
 
+    // obd.setBaudRate(115200);
+    // obd.begin();
+
     while(!wait_obd()){
         draw_waiting();
-        delay(75);
+        // delay(75);
     }
 }
