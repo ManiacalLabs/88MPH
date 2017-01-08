@@ -1,0 +1,4 @@
+(fp_lib_table
+  (lib (name misc)(type KiCad)(uri "$(KIPRJMOD)\\misc.pretty")(options "")(descr ""))
+  (lib (name HDSP-816X)(type Legacy)(uri "$(KIPRJMOD)\\hdsp.pretty\\HDSP-816X.mod")(options "")(descr ""))
+)
