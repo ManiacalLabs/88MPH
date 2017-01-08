@@ -4,10 +4,10 @@
 * Visit http://freematics.com for more information
 * (C)2012-2016 Stanley Huang <stanleyhuangyc@gmail.com>
 *************************************************************************/
-
 #include "OBD2UART.h"
 
-//#define DEBUG Serial
+SoftwareSerial sserial(A2, A3);
+#define DEBUG sserial
 
 uint16_t hex2uint16(const char *p)
 {
@@ -86,7 +86,7 @@ byte COBD::readPID(const byte pid[], byte count, int result[])
 	char *p = buffer;
 	byte results = 0;
 	for (byte n = 0; n < count; n++) {
-		p += sprintf(p, "%02X%02X\r", dataMode, pid[n]);		
+		p += sprintf(p, "%02X%02X\r", dataMode, pid[n]);
 	}
 	write(buffer);
 	// receive and parse the response
@@ -301,11 +301,12 @@ bool COBD::isValidPID(byte pid)
 	return pidmap[i] & b;
 }
 
-void COBD::begin()
+SoftwareSerial * COBD::begin()
 {
 	OBDUART.begin(OBD_SERIAL_BAUDRATE);
 #ifdef DEBUG
 	DEBUG.begin(115200);
+	DEBUG.println("Debug Enabled...");
 #endif
 	recover();
 
@@ -318,6 +319,8 @@ void COBD::begin()
 			version = (*p - '0') * 10 + (*(p + 2) - '0');
 		}
 	}
+
+	return &DEBUG;
 }
 
 byte COBD::receive(char* buffer, byte bufsize, int timeout)
@@ -474,4 +477,3 @@ void COBD::debugOutput(const char *s)
 	DEBUG.print(s);
 }
 #endif
-

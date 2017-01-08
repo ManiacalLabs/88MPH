@@ -4,7 +4,7 @@
 * Visit http://freematics.com for more information
 * (C)2012-2016 Stanley Huang <stanleyhuangyc@gmail.com>
 *************************************************************************/
-
+#include <SoftwareSerial.h>
 #include <Arduino.h>
 
 #define OBD_TIMEOUT_SHORT 1000 /* ms */
@@ -100,7 +100,7 @@ class COBD
 public:
 	COBD():dataMode(1),errors(0),m_state(OBD_DISCONNECTED) {}
 	// begin serial UART
-	virtual void begin();
+	virtual SoftwareSerial * begin();
 	// initialize OBD-II connection
 	virtual bool init(OBD_PROTOCOLS protocol = PROTO_AUTO);
 	// un-initialize OBD-II connection
@@ -175,4 +175,3 @@ private:
 	}
 	char* getResultValue(char* buf);
 };
-

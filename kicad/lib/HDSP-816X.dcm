@@ -1,0 +1,7 @@
+EESchema-DOCLIB  Version 2.0
+#
+$CMP HDSP-816X
+F ../fabricate/HDSP-816E.pdf
+$ENDCMP
+#
+#End Doc Library

@@ -11,7 +11,7 @@
 
 // On Arduino Leonardo, Micro, MEGA or DUE, hardware serial can be used for output
 // as OBD-II UART adapter connects to Serial1, otherwise we use software serial
-SoftwareSerial mySerial(A2, A3);
+SoftwareSerial *mySerial;
 //#define mySerial Serial
 
 COBD obd;
@@ -23,8 +23,8 @@ void testOut()
 
     for (byte i = 0; i < sizeof(cmds) / sizeof(cmds[0]); i++) {
         const char *cmd = cmds[i];
-        mySerial.print("Sending ");
-        mySerial.println(cmd);
+        mySerial->print("Sending ");
+        mySerial->println(cmd);
         if (obd.sendCommand(cmd, buf, sizeof(buf))) {
             char *p = strstr(buf, cmd);
             if (p)
@@ -33,30 +33,30 @@ void testOut()
                 p = buf;
             while (*p == '\r') p++;
             while (*p) {
-                mySerial.write(*p);
+                mySerial->write(*p);
                 if (*p == '\r' && *(p + 1) != '\r')
-                    mySerial.write('\n');
+                    mySerial->write('\n');
                 p++;
             }
         } else {
-            mySerial.println("Timeout");
+            mySerial->println("Timeout");
         }
         delay(1000);
     }
-    mySerial.println();
+    mySerial->println();
 }
 
 void readPIDSingle()
 {
     int value;
-    mySerial.print('[');
-    mySerial.print(millis());
-    mySerial.print(']');
-    mySerial.print("RPM=");
+    mySerial->print('[');
+    mySerial->print(millis());
+    mySerial->print(']');
+    mySerial->print("RPM=");
     if (obd.readPID(PID_RPM, value)) {
-      mySerial.print(value);
+      mySerial->print(value);
     }
-    mySerial.println();
+    mySerial->println();
 }
 
 void readPIDMultiple()
@@ -65,12 +65,12 @@ void readPIDMultiple()
     int values[sizeof(pids)];
     if (obd.readPID(pids, sizeof(pids), values) == sizeof(pids)) {
       for (byte i = 0; i < sizeof(pids) ; i++) {
-        mySerial.print('[');
-        mySerial.print(millis());
-        mySerial.print(']');
-        mySerial.print((int)pids[i] | 0x100, HEX);
-        mySerial.print('=');
-        mySerial.println(values[i]);
+        mySerial->print('[');
+        mySerial->print(millis());
+        mySerial->print(']');
+        mySerial->print((int)pids[i] | 0x100, HEX);
+        mySerial->print('=');
+        mySerial->println(values[i]);
        }
     }
 }
@@ -78,22 +78,24 @@ void readPIDMultiple()
 void setup()
 {
   delay(500);
-  mySerial.begin(115200);
+  // mySerial->begin(115200);
+  // mySerial->println("OBD Begin...");
   // this will begin serial
-  obd.begin();
+  mySerial = obd.begin();
 
   // send some commands for testing and show response
+  mySerial->println("Begin testOut...");
   testOut();
 
   // initialize OBD-II adapter
   do {
-    mySerial.println("Init...");
+    mySerial->println("Init...");
   } while (!obd.init());
 
   char buf[64];
   if (obd.getVIN(buf, sizeof(buf))) {
-      mySerial.print("VIN:");
-      mySerial.println(buf);
+      mySerial->print("VIN:");
+      mySerial->println(buf);
   }
   delay(1000);
 }
