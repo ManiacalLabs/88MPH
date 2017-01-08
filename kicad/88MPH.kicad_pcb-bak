@@ -5,7 +5,7 @@
     (no_connects 1)
     (area 0 0 0 0)
     (thickness 1.6)
-    (drawings 49)
+    (drawings 50)
     (tracks 271)
     (zones 0)
     (modules 27)
@@ -1002,6 +1002,9 @@
       (xy 0.115943 5.420175) (xy 0.37351 5.419811)) (layer B.SilkS) (width 0.01))
   )
 
+  (gr_text "88\nMPH" (at 170.942 96.774) (layer B.SilkS)
+    (effects (font (size 3.048 3.048) (thickness 0.508)) (justify mirror))
+  )
   (gr_text "OFFSET\nDOWN" (at 148.59 93.345) (layer B.SilkS)
     (effects (font (size 0.762 0.762) (thickness 0.1905)) (justify mirror))
   )

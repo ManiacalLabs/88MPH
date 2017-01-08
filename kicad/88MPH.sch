@@ -60,7 +60,7 @@ A
 Text GLabel 5850 2950 0    40   Input ~ 0
 F
 Text GLabel 5850 3050 0    40   Input ~ 0
-CK
+CK1
 Text GLabel 5850 3150 0    40   Input ~ 0
 E
 Text GLabel 7350 3450 2    40   Input ~ 0
@@ -84,7 +84,7 @@ A
 Text GLabel 7800 2950 0    40   Input ~ 0
 F
 Text GLabel 7800 3050 0    40   Input ~ 0
-CK
+CK2
 Text GLabel 7800 3150 0    40   Input ~ 0
 E
 Text GLabel 9300 3450 2    40   Input ~ 0

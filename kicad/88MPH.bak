@@ -137,9 +137,9 @@ Text GLabel 4750 4450 2    40   Input ~ 0
 C
 Text GLabel 4750 2150 2    40   Input ~ 0
 D
-Text GLabel 4750 2450 2    40   Input ~ 0
+Text GLabel 5300 2450 2    40   Input ~ 0
 G
-Text GLabel 4750 2550 2    40   Input ~ 0
+Text GLabel 5300 2550 2    40   Input ~ 0
 DP
 Text GLabel 4400 3000 2    40   Input ~ 0
 D1
@@ -181,23 +181,23 @@ $EndComp
 $Comp
 L R R4
 U 1 1 58719CC6
-P 4600 2450
-F 0 "R4" V 4600 2300 50  0000 C CNN
-F 1 "150" V 4600 2450 50  0000 C CNN
-F 2 "misc:0.125_Resistor" V 4530 2450 50  0001 C CNN
-F 3 "" H 4600 2450 50  0000 C CNN
-	1    4600 2450
+P 5150 2450
+F 0 "R4" V 5150 2300 50  0000 C CNN
+F 1 "150" V 5150 2450 50  0000 C CNN
+F 2 "misc:0.125_Resistor" V 5080 2450 50  0001 C CNN
+F 3 "" H 5150 2450 50  0000 C CNN
+	1    5150 2450
 	0    1    1    0   
 $EndComp
 $Comp
 L R R5
 U 1 1 58719CEB
-P 4600 2550
-F 0 "R5" V 4600 2400 50  0000 C CNN
-F 1 "150" V 4600 2550 50  0000 C CNN
-F 2 "misc:0.125_Resistor" V 4530 2550 50  0001 C CNN
-F 3 "" H 4600 2550 50  0000 C CNN
-	1    4600 2550
+P 5150 2550
+F 0 "R5" V 5150 2400 50  0000 C CNN
+F 1 "150" V 5150 2550 50  0000 C CNN
+F 2 "misc:0.125_Resistor" V 5080 2550 50  0001 C CNN
+F 3 "" H 5150 2550 50  0000 C CNN
+	1    5150 2550
 	0    1    1    0   
 $EndComp
 $Comp
@@ -466,9 +466,9 @@ Wire Wire Line
 Wire Wire Line
 	4400 2350 4450 2350
 Wire Wire Line
-	4450 2450 4400 2450
+	5000 2450 4950 2450
 Wire Wire Line
-	4400 2550 4450 2550
+	4950 2550 5000 2550
 Wire Wire Line
 	4400 4250 4450 4250
 Wire Wire Line
@@ -592,4 +592,22 @@ F 3 "" H 6150 1800 50  0000 C CNN
 	1    6150 1800
 	0    -1   -1   0   
 $EndComp
+Text GLabel 4400 2450 2    40   Input ~ 0
+MOSI
+Text GLabel 4400 2550 2    40   Input ~ 0
+MISO
+Wire Wire Line
+	4400 2450 4400 2500
+Wire Wire Line
+	4400 2500 4950 2500
+Wire Wire Line
+	4950 2500 4950 2450
+Wire Wire Line
+	4400 2550 4400 2600
+Wire Wire Line
+	4400 2600 4950 2600
+Wire Wire Line
+	4950 2600 4950 2550
+Text GLabel 4400 2650 2    40   Input ~ 0
+SCK
 $EndSCHEMATC
