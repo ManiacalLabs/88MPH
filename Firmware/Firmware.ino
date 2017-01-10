@@ -137,9 +137,7 @@ uint8_t get_speed(){
 
     if(_target_speed == 0) return TIME_SPEED;
     else{
-        // speed = (millis() / 100) % 99;
         obd.readPID(PID_SPEED, speed);
-        // speed = (uint8_t)(speed / 100);
         //OBD returns KPH, convert to MPH
         speed = (uint8_t)((speed * 10000L + 5)/ 16090);
     }
@@ -154,7 +152,6 @@ uint8_t get_speed(){
 
 bool wait_obd(){
     delay(10);
-    // return millis() > 2000;
     return obd.init();
 }
 
@@ -179,6 +176,7 @@ void draw_waiting(){
     _wait_step++;
     if(_wait_step >= WAIT_STEPS) _wait_step = 0;
 }
+
 uint8_t test_val = 76;
 bool _in_target_set = false;
 
@@ -256,9 +254,9 @@ void loop(){
 
 void setup(){
     //make sure 0 before init anything else
-    set_value(76);
-    set_dp(0, false);
-    set_dp(1, false);
+    set_value(88);
+    set_dp(0, true);
+    set_dp(1, true);
 
     //load config
     read_config();
@@ -286,11 +284,12 @@ void setup(){
     MsTimer2::set(BTN_SCAN_PERIOD, check_btns);
     MsTimer2::start();
 
-    // obd.setBaudRate(115200);
     obd.begin();
-
     while(!wait_obd()){
         draw_waiting();
-        // delay(75);
     }
+
+    //Set normal DP mode
+    set_dp(0, true);
+    set_dp(1, false);
 }
