@@ -137,10 +137,11 @@ uint8_t get_speed(){
 
     if(_target_speed == 0) return TIME_SPEED;
     else{
-        speed = (millis() / 100) % 99;
-        // obd.readPID(PID_THROTTLE, speed);
+        // speed = (millis() / 100) % 99;
+        obd.readPID(PID_SPEED, speed);
+        // speed = (uint8_t)(speed / 100);
         //OBD returns KPH, convert to MPH
-        // speed = (uint8_t)((speed * 10000L + 5)/ 16090);
+        speed = (uint8_t)((speed * 10000L + 5)/ 16090);
     }
 
     if(_target_speed != TIME_SPEED){
@@ -152,8 +153,9 @@ uint8_t get_speed(){
 }
 
 bool wait_obd(){
-    return millis() > 2000;
-    // return obd.init();
+    delay(10);
+    // return millis() > 2000;
+    return obd.init();
 }
 
 #define WAIT_STEPS 8
@@ -254,14 +256,14 @@ void loop(){
 
 void setup(){
     //make sure 0 before init anything else
-    set_value(22);
+    set_value(76);
     set_dp(0, false);
     set_dp(1, false);
 
     //load config
     read_config();
 
-    //Setup btn pins
+    //Setup btn pinsf
     pinMode(BTN_A.pin, INPUT_PULLUP);
     pinMode(BTN_B.pin, INPUT_PULLUP);
 
@@ -285,7 +287,7 @@ void setup(){
     MsTimer2::start();
 
     // obd.setBaudRate(115200);
-    // obd.begin();
+    obd.begin();
 
     while(!wait_obd()){
         draw_waiting();
