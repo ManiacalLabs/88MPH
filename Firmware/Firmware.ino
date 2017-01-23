@@ -177,7 +177,6 @@ void draw_waiting(){
     if(_wait_step >= WAIT_STEPS) _wait_step = 0;
 }
 
-uint8_t test_val = 76;
 bool _in_target_set = false;
 
 #define BLINK_COUNT 3

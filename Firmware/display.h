@@ -20,8 +20,8 @@ byte anodes[SEG_COUNT] = {
 
 #define DIGIT_COUNT 2
 byte cathodes[DIGIT_COUNT] = {
-    14, //Display 0
-    15 //Display 1
+    15, //Display 1
+    14 //Display 2
 };
 
 byte digits[10] = {
