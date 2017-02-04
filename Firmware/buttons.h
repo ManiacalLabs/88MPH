@@ -1,3 +1,6 @@
+#ifndef BUTTONS_H
+#define BUTTONS_H
+
 typedef struct {
     byte pin;
     uint16_t count;
@@ -35,3 +38,5 @@ volatile _button btns[2] = {
 #define HOLD_BTN_B BTN_B.hold_flag && !BTN_B.reset
 #define PRESS_BTN_A BTN_A.press_flag && !BTN_A.reset
 #define PRESS_BTN_B BTN_B.press_flag && !BTN_B.reset
+
+#endif BUTTONS_H

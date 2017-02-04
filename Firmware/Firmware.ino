@@ -4,21 +4,10 @@
 #include "buttons.h"
 #include "MsTimer2.h"
 #include "OBD2UART.h"
+#include "Narcoleptic.h"
+#include "global.h"
 
 COBD obd;
-
-#define TIME_SPEED 88 //when this baby hits...
-
-uint8_t _cur_value;
-byte _digit_values[DIGIT_COUNT];
-
-#define CONFIG_CHECK 42
-#define CONFIG_BYTE 0
-bool _pwm_level = true;
-#define PWM_BYTE 1
-uint8_t _target_speed = TIME_SPEED;
-#define TARGET_BYTE 2
-#define SPEED_MAX 99
 
 void write_config(){
     EEPROM.write(CONFIG_BYTE, CONFIG_CHECK);
@@ -45,11 +34,6 @@ inline void disp_num(byte digit){
     }
 }
 
-#define PWM_STEPS 20
-#define PWM_HIGH PWM_STEPS
-#define PWM_LOW 5
-volatile byte _pwm_step = 0;
-volatile byte _digit = 0;
 void plex(){
     static byte i;
     //disable ALL to prevent ghosting
@@ -132,43 +116,47 @@ void clear_btns(){
     clear_btn(&BTN_B);
 }
 
-uint8_t get_speed(){
-    static int speed;
+void reconnect()
+{
+    for (;;) {
+        if (obd.init())
+            break;
+
+        draw_waiting();
+
+        obd.sleep();
+        delay(5000);
+    }
+}
+
+void get_obd(){
+    static const byte pids[] = {PID_SPEED, PID_RPM};
+    static obd_result obd_data = {0, 0};
+    int values[sizeof(pids)];
 
     if(_target_speed == 0) return TIME_SPEED;
     else{
-        obd.readPID(PID_SPEED, speed);
-        //OBD returns KPH, convert to MPH
-        speed = (uint8_t)((speed * 10000L + 5)/ 16090);
+        if(obd.readPID(pids, sizeof(pids), values) != sizeof(pids))
+        {
+            error_count++;
+        }
+        else
+        {
+            //OBD returns KPH, convert to MPH
+            obd_data.speed = (uint8_t)((values[0] * 10000L + 5)/ 16090);
+            obd_data.rpm = values[0];
+        }
     }
 
     if(_target_speed != TIME_SPEED){
         //map target speed to 88mph for proper scaling
-        speed = map(speed, 0, _target_speed, 0, TIME_SPEED);
+        obd_data.speed = map(obd_data.speed, 0, _target_speed, 0, TIME_SPEED);
     }
 
-    return (uint8_t)speed;
+    if (obd.errors >= 3) {
+        reconnect();
+    }
 }
-
-bool wait_obd(){
-    delay(10);
-    return obd.init();
-}
-
-#define WAIT_STEPS 8
-byte _wait_step = 0;
-byte _wait_frames[WAIT_STEPS][2] = {
-    //note, 0 is right, 1 is left
-    //So these are reverse ordered from the physical layout
-    {0b00000011, 0b00000000},
-    {0b00000110, 0b00000000},
-    {0b00001100, 0b00000000},
-    {0b00001000, 0b00001000},
-    {0b00000000, 0b00011000},
-    {0b00000000, 0b00110000},
-    {0b00000000, 0b00100001},
-    {0b00000001, 0b00000001}
-};
 
 void draw_waiting(){
     _digit_values[0] = _wait_frames[_wait_step][0];
@@ -177,9 +165,6 @@ void draw_waiting(){
     if(_wait_step >= WAIT_STEPS) _wait_step = 0;
 }
 
-bool _in_target_set = false;
-
-#define BLINK_COUNT 3
 void blink_target(){
     for(byte i=0; i < BLINK_COUNT; i++){
         _digit_values[0] = _digit_values[1] = 0b00000000;
@@ -189,6 +174,7 @@ void blink_target(){
             delay(250);
     }
 }
+
 inline void start_target_set(){
     _in_target_set = true;
     set_dp(0, false);
@@ -207,7 +193,7 @@ inline void stop_target_set(){
     set_dp(1, false);
 }
 
-void loop(){
+inline void normal_loop(){
     if(HOLD_BTN_A){
         if(_in_target_set){
             stop_target_set();
@@ -244,11 +230,69 @@ void loop(){
         set_value(_target_speed);
     }
     else{
-        //get speed
-        set_value(get_speed());
+        get_obd();
+        set_value(obd_data.speed);
+        if(obd_data.rpm <= LOW_RPM){
+            low_rpm_count++;
+        }
+        else{
+            // Only wait if RPM not low so
+            // recheck happens fast
+            delay(200);
+        }
     }
 
     clear_btns();
+}
+
+void do_wait(byte count)
+{
+    _wait_step = 0;
+    for(byte i=0; i<sizeof(_wait_frames) * count; i++){
+        draw_waiting();
+        delay(100);
+    }
+}
+
+void do_sleep(){
+    obd.sleep();
+    Narcoleptic.delay(ENGINE_OFF_SLEEP * 1000);
+}
+
+void do_engine_off(){
+    engine_off = true;
+    low_rpm_count = 0;
+
+    do_wait(3);
+
+    _digit_values[0] = 0;
+    _digit_values[1] = 0;
+
+    do_sleep();
+}
+
+void check_engine_on(){
+    get_obd();
+    if(obd_data.rpm > LOW_RPM)
+        engine_off = false;
+    else
+        do_sleep();
+}
+
+void loop(){
+    if(!engine_off)
+    {
+        normal_loop();
+
+        if(low_rpm_count >= LOW_RPM_MAX)
+            do_engine_off();
+    }
+    else
+    {
+        check_engine_on();
+        if(!engine_off)
+            do_wait(3);
+    }
 }
 
 void setup(){
@@ -284,9 +328,7 @@ void setup(){
     MsTimer2::start();
 
     obd.begin();
-    while(!wait_obd()){
-        draw_waiting();
-    }
+    reconnect();
 
     //Set normal DP mode
     set_dp(0, true);

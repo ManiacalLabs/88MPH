@@ -1,3 +1,6 @@
+#ifndef DISPLAY_H
+#define DISPLAY_H
+
 #define SEG_COUNT 8
 byte anodes[SEG_COUNT] = {
     5, //A
@@ -18,6 +21,7 @@ byte anodes[SEG_COUNT] = {
 // D
 //####
 
+
 #define DIGIT_COUNT 2
 byte cathodes[DIGIT_COUNT] = {
     15, //Display 1
@@ -36,3 +40,6 @@ byte digits[10] = {
     0b01111111, //8
     0b01101111  //9
 };
+
+
+#endif DISPLAY_H
